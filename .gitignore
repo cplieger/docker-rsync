@@ -5,3 +5,6 @@
 **/.code-review/
 **/.refactor/
 **/.steering-maintenance/
+
+# Built binary
+/docker-rsync-scheduler

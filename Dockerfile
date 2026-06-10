@@ -1,4 +1,14 @@
 # check=error=true
+FROM golang:1.26-trixie AS go-builder
+ENV GOTOOLCHAIN=auto
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY *.go ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /docker-rsync-scheduler .
 
 FROM alpine:3.24.0@sha256:a2d49ea686c2adfe3c992e47dc3b5e7fa6e6b5055609400dc2acaeb241c829f4
 
@@ -11,10 +21,12 @@ RUN apk add --no-cache \
         rsync="${RSYNC_VERSION}" \
         openssh-client="${OPENSSH_VERSION}"
 
-# Exec-driven sidecar by default: the container stays alive so a scheduler
-# (Ofelia, cron, Kubernetes) can `exec` rsync/ssh commands into it. One-shot
-# users override the command, e.g.:
-#   docker run --rm ghcr.io/cplieger/docker-rsync rsync -a src/ host:/dst/
-HEALTHCHECK --interval=60s --timeout=5s --retries=3 --start-period=5s \
-    CMD pidof sleep >/dev/null || exit 1
-CMD ["sleep", "infinity"]
+COPY --chmod=755 --from=go-builder /docker-rsync-scheduler /usr/local/bin/docker-rsync-scheduler
+
+# Runs as root by design: the app must read host-owned source files (e.g.
+# uid 568) across multiple bind mounts and write ssh known_hosts on first
+# contact (StrictHostKeyChecking=accept-new). A fixed USER would break both.
+HEALTHCHECK --interval=60s --timeout=5s --retries=3 --start-period=30s \
+    CMD ["/usr/local/bin/docker-rsync-scheduler", "health"]
+ENTRYPOINT ["/usr/local/bin/docker-rsync-scheduler"]
+CMD ["daemon"]

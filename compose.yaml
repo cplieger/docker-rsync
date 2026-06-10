@@ -1,15 +1,33 @@
 services:
   rsync:
-    image: ghcr.io/cplieger/docker-rsync:latest
+    image: ghcr.io/cplieger/docker-rsync-scheduler:latest
     container_name: rsync
     restart: unless-stopped
 
-    # The image stays alive (`sleep infinity`) so a scheduler can exec rsync/ssh
-    # into it — e.g. a cron sibling running:
-    #   docker exec rsync rsync -a --delete -e "ssh -i /key/id_ed25519" \
-    #       /data/ user@host:/dest/
-    #
-    # Mount a dedicated SSH private key (mode 0600) and whatever you want to sync.
+    # Built-in scheduling (default): the container runs one full sync pass
+    # at startup for immediate freshness, then every SYNC_INTERVAL. No
+    # external scheduler is required.
+    environment:
+      LOG_LEVEL: "info"        # debug | info | warn | error
+      CONFIG_PATH: "/config/config.yaml"
+      SYNC_INTERVAL: "1h"      # built-in cadence (Go duration); "off" -> external
+      SYNC_TIMEOUT: "10m"      # per-job rsync timeout (Go duration)
+
+    # External scheduling variant: disable the built-in loop and let a
+    # central scheduler drive each pass by exec'ing the `sync` subcommand.
+    # The advisory lock on /tmp/.docker-rsync-scheduler.lock prevents
+    # overlapping passes across the exec and the (now-idle) daemon.
+    #   environment:
+    #     SYNC_INTERVAL: "off"   # disabled | 0 also disable the built-in scheduler
+    #   labels:                  # e.g. an Ofelia sibling on the same host
+    #     ofelia.enabled: "true"
+    #     ofelia.job-exec.rsync-sync.schedule: "@every 1h"
+    #     ofelia.job-exec.rsync-sync.command: "docker-rsync-scheduler sync"
+    #     ofelia.job-exec.rsync-sync.no-overlap: "true"
+
     volumes:
-      - ./id_ed25519:/key/id_ed25519:ro
-      - ./data:/data:ro
+      - ./config.yaml:/config/config.yaml:ro
+      - ./id_ed25519:/keys/id_ed25519:ro   # dedicated SSH key, host file mode 0600
+      # Source directories referenced by the jobs in config.yaml:
+      - /srv/containers/caddy:/sources/caddy:ro
+      - /srv/containers/vaultwarden:/sources/vaultwarden:ro
