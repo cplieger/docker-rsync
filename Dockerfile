@@ -17,7 +17,10 @@ ARG RSYNC_VERSION=3.4.3-r1
 # renovate: datasource=repology depName=alpine_3_24/openssh versioning=loose
 ARG OPENSSH_VERSION=10.3_p1-r0
 
-RUN apk add --no-cache \
+# --upgrade pulls patched transitive deps (libcrypto3/libssl3, etc.) that the
+# pinned base image pre-installs at an older, CVE-affected revision; plain
+# `apk add` would leave the already-satisfied base OpenSSL unpatched.
+RUN apk add --no-cache --upgrade \
         rsync="${RSYNC_VERSION}" \
         openssh-client="${OPENSSH_VERSION}"
 

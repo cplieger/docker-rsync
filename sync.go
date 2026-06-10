@@ -54,9 +54,9 @@ type syncStats struct {
 // jobResult captures the outcome of a single job for logging and health
 // aggregation. Fields are ordered largest-first for fieldalignment.
 type jobResult struct {
+	err        error
 	name       string
 	stderrTail string
-	err        error
 	files      int64
 	bytes      int64
 	duration   time.Duration

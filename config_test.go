@@ -38,8 +38,8 @@ func TestValidate(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		cfg     config
 		wantErr string
+		cfg     config
 	}{
 		{
 			name: "valid minimal",

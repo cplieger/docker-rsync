@@ -38,14 +38,14 @@ type config struct {
 // remote host. Fields are ordered largest-first to satisfy the
 // fieldalignment vet check.
 type job struct {
-	Excludes   []string `yaml:"excludes"`
+	RemoteUID  *int     `yaml:"remote_uid"`
+	RemoteGID  *int     `yaml:"remote_gid"`
 	Name       string   `yaml:"name"`
 	Local      string   `yaml:"local"`
 	RemoteHost string   `yaml:"remote_host"`
 	RemotePath string   `yaml:"remote_path"`
 	SSHKey     string   `yaml:"ssh_key"`
-	RemoteUID  *int     `yaml:"remote_uid"`
-	RemoteGID  *int     `yaml:"remote_gid"`
+	Excludes   []string `yaml:"excludes"`
 	Delete     bool     `yaml:"delete"`
 }
 
