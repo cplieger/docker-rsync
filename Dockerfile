@@ -14,7 +14,7 @@ RUN apk add --no-cache \
 # Exec-driven sidecar by default: the container stays alive so a scheduler
 # (Ofelia, cron, Kubernetes) can `exec` rsync/ssh commands into it. One-shot
 # users override the command, e.g.:
-#   docker run --rm ghcr.io/cplieger/docker-rsyncssh rsync -a src/ host:/dst/
+#   docker run --rm ghcr.io/cplieger/docker-rsync rsync -a src/ host:/dst/
 HEALTHCHECK --interval=60s --timeout=5s --retries=3 --start-period=5s \
     CMD pidof sleep >/dev/null || exit 1
 CMD ["sleep", "infinity"]

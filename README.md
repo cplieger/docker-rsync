@@ -1,8 +1,8 @@
-# docker-rsyncssh
+# docker-rsync
 
 ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
-[![GitHub release](https://img.shields.io/github/v/release/cplieger/docker-rsyncssh)](https://github.com/cplieger/docker-rsyncssh/releases)
-[![Image Size](https://ghcr-badge.egpl.dev/cplieger/docker-rsyncssh/size)](https://github.com/cplieger/docker-rsyncssh/pkgs/container/docker-rsyncssh)
+[![GitHub release](https://img.shields.io/github/v/release/cplieger/docker-rsync)](https://github.com/cplieger/docker-rsync/releases)
+[![Image Size](https://ghcr-badge.egpl.dev/cplieger/docker-rsync/size)](https://github.com/cplieger/docker-rsync/pkgs/container/docker-rsync)
 ![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-blue)
 ![base: Alpine 3.24.0](https://img.shields.io/badge/base-Alpine_3.24.0-0D597F?logo=alpinelinux)
 
@@ -29,9 +29,9 @@ Run it alongside a scheduler and `exec` the sync on a schedule:
 
 ```yaml
 services:
-  rsyncssh:
-    image: ghcr.io/cplieger/docker-rsyncssh:latest
-    container_name: rsyncssh
+  rsync:
+    image: ghcr.io/cplieger/docker-rsync:latest
+    container_name: rsync
     restart: unless-stopped
     volumes:
       - ./id_ed25519:/key/id_ed25519:ro   # dedicated SSH key, mode 0600
@@ -39,7 +39,7 @@ services:
 ```
 
 ```bash
-docker exec rsyncssh rsync -a --delete \
+docker exec rsync rsync -a --delete \
     -e "ssh -i /key/id_ed25519 -o StrictHostKeyChecking=accept-new" \
     /data/ user@remote:/dest/
 ```
@@ -48,7 +48,7 @@ docker exec rsyncssh rsync -a --delete \
 
 ```bash
 docker run --rm -v "$(pwd)/data:/data:ro" -v "$(pwd)/id_ed25519:/key/id_ed25519:ro" \
-    ghcr.io/cplieger/docker-rsyncssh \
+    ghcr.io/cplieger/docker-rsync \
     rsync -a -e "ssh -i /key/id_ed25519" /data/ user@remote:/dest/
 ```
 
@@ -93,8 +93,8 @@ This reflects "the sidecar is up and ready to be exec'd into". It is not meaning
 The image ships `openssh-client` only — no `sshd`, so the container exposes no listening service. It is published with [cosign](https://github.com/sigstore/cosign) signatures and SBOM attestations. Verify a pull:
 
 ```bash
-cosign verify ghcr.io/cplieger/docker-rsyncssh:latest \
-    --certificate-identity-regexp "https://github.com/cplieger/docker-rsyncssh/.github/workflows/.*" \
+cosign verify ghcr.io/cplieger/docker-rsync:latest \
+    --certificate-identity-regexp "https://github.com/cplieger/docker-rsync/.github/workflows/.*" \
     --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 

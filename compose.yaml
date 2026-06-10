@@ -1,12 +1,12 @@
 services:
-  rsyncssh:
-    image: ghcr.io/cplieger/docker-rsyncssh:latest
-    container_name: rsyncssh
+  rsync:
+    image: ghcr.io/cplieger/docker-rsync:latest
+    container_name: rsync
     restart: unless-stopped
 
     # The image stays alive (`sleep infinity`) so a scheduler can exec rsync/ssh
     # into it — e.g. a cron sibling running:
-    #   docker exec rsyncssh rsync -a --delete -e "ssh -i /key/id_ed25519" \
+    #   docker exec rsync rsync -a --delete -e "ssh -i /key/id_ed25519" \
     #       /data/ user@host:/dest/
     #
     # Mount a dedicated SSH private key (mode 0600) and whatever you want to sync.
