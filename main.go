@@ -87,7 +87,7 @@ func runBuiltin(ctx context.Context, marker *health.Marker, cfg config, timeout 
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		_, failCount := runSyncPass(ctx, cfg, timeout, "startup", defaultCommandRunner)
+		failCount := runSyncPass(ctx, cfg, timeout, "startup", defaultCommandRunner)
 		marker.Set(failCount == 0)
 	})
 	wg.Go(func() {
@@ -98,7 +98,7 @@ func runBuiltin(ctx context.Context, marker *health.Marker, cfg config, timeout 
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				_, failCount := runSyncPass(ctx, cfg, timeout, "interval", defaultCommandRunner)
+				failCount := runSyncPass(ctx, cfg, timeout, "interval", defaultCommandRunner)
 				marker.Set(failCount == 0)
 			}
 		}
@@ -146,7 +146,7 @@ func runSync(ctx context.Context) int {
 	timeout := loadSyncTimeout()
 
 	marker := health.NewMarker(healthMarkerPath)
-	_, failCount := runSyncPass(ctx, cfg, timeout, "external", defaultCommandRunner)
+	failCount := runSyncPass(ctx, cfg, timeout, "external", defaultCommandRunner)
 	marker.Set(failCount == 0)
 
 	if failCount > 0 {

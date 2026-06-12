@@ -14,8 +14,8 @@ import (
 
 // argJob returns a job with the given knobs set, using a fixed key path
 // (buildRsyncArgs does no filesystem access, so the path need not exist).
-func argJob(delete bool, uid, gid *int, excludes []string) job {
-	return job{
+func argJob(delete bool, uid, gid *int, excludes []string) *job {
+	return &job{
 		Name:       "caddy",
 		Local:      "/sources/caddy",
 		RemoteHost: "root@192.168.1.87",
@@ -27,8 +27,6 @@ func argJob(delete bool, uid, gid *int, excludes []string) job {
 		Excludes:   excludes,
 	}
 }
-
-func intp(n int) *int { return &n }
 
 const wantSSH = "ssh -i /keys/id_ed25519 -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=10"
 
@@ -71,7 +69,7 @@ func TestBuildRsyncArgs(t *testing.T) {
 
 	t.Run("uid and gid add chown", func(t *testing.T) {
 		t.Parallel()
-		got := buildRsyncArgs(argJob(false, intp(1000), intp(1000), nil))
+		got := buildRsyncArgs(argJob(false, new(1000), new(1000), nil))
 		if !slices.Contains(got, "--chown=1000:1000") {
 			t.Errorf("--chown=1000:1000 absent in %v", got)
 		}
@@ -79,7 +77,7 @@ func TestBuildRsyncArgs(t *testing.T) {
 
 	t.Run("uid only does not add chown", func(t *testing.T) {
 		t.Parallel()
-		got := buildRsyncArgs(argJob(false, intp(1000), nil, nil))
+		got := buildRsyncArgs(argJob(false, new(1000), nil, nil))
 		if hasChown(got) {
 			t.Errorf("--chown present with gid unset in %v", got)
 		}
@@ -87,7 +85,7 @@ func TestBuildRsyncArgs(t *testing.T) {
 
 	t.Run("gid only does not add chown", func(t *testing.T) {
 		t.Parallel()
-		got := buildRsyncArgs(argJob(false, nil, intp(1000), nil))
+		got := buildRsyncArgs(argJob(false, nil, new(1000), nil))
 		if hasChown(got) {
 			t.Errorf("--chown present with uid unset in %v", got)
 		}
@@ -111,7 +109,7 @@ func TestBuildRsyncArgs(t *testing.T) {
 
 	t.Run("all knobs together", func(t *testing.T) {
 		t.Parallel()
-		got := buildRsyncArgs(argJob(true, intp(0), intp(0), []string{"logs"}))
+		got := buildRsyncArgs(argJob(true, new(0), new(0), []string{"logs"}))
 		want := []string{
 			"-rlptD", "--delete", "--chown=0:0", "--stats", "-e", wantSSH,
 			"--exclude=.stfolder", "--exclude=.stversions",
@@ -333,10 +331,10 @@ func TestProperty_BuildRsyncArgsInvariants(t *testing.T) {
 
 		var uid, gid *int
 		if hasUID {
-			uid = intp(rapid.IntRange(0, 70000).Draw(rt, "uid"))
+			uid = new(rapid.IntRange(0, 70000).Draw(rt, "uid"))
 		}
 		if hasGID {
-			gid = intp(rapid.IntRange(0, 70000).Draw(rt, "gid"))
+			gid = new(rapid.IntRange(0, 70000).Draw(rt, "gid"))
 		}
 		n := rapid.IntRange(0, 4).Draw(rt, "nExcludes")
 		excludes := make([]string, n)

@@ -20,8 +20,6 @@ func writeKey(t *testing.T) string {
 	return path
 }
 
-func intPtr(n int) *int { return &n }
-
 // validJob returns a job that passes validation, using key as ssh_key.
 func validJob(name, key string) job {
 	return job{
@@ -53,8 +51,8 @@ func TestValidate(t *testing.T) {
 				RemoteHost: "root@192.168.1.87",
 				RemotePath: "/srv/containers/caddy",
 				SSHKey:     key,
-				RemoteUID:  intPtr(1000),
-				RemoteGID:  intPtr(1000),
+				RemoteUID:  new(1000),
+				RemoteGID:  new(1000),
 				Delete:     true,
 				Excludes:   []string{"**/locks", "**/*.lock", "logs"},
 			}}},
