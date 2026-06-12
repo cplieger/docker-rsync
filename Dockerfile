@@ -12,17 +12,14 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM alpine:3.24.0@sha256:a2d49ea686c2adfe3c992e47dc3b5e7fa6e6b5055609400dc2acaeb241c829f4
 
-# renovate: datasource=repology depName=alpine_3_24/rsync versioning=loose
-ARG RSYNC_VERSION=3.4.3-r1
-# renovate: datasource=repology depName=alpine_3_24/openssh versioning=loose
-ARG OPENSSH_VERSION=10.3_p1-r0
-
-# --upgrade pulls patched transitive deps (libcrypto3/libssl3, etc.) that the
-# pinned base image pre-installs at an older, CVE-affected revision; plain
-# `apk add` would leave the already-satisfied base OpenSSL unpatched.
+# No apk version pins: the digest-pinned base fixes the Alpine release line, so
+# package-revision pins only strand the build on an Alpine release bump.
+# --upgrade is load-bearing: it pulls patched transitive deps (libcrypto3/libssl3,
+# etc.) that the pinned base image pre-installs at an older, CVE-affected
+# revision; plain `apk add` would leave the already-satisfied base OpenSSL unpatched.
 RUN apk add --no-cache --upgrade \
-        rsync="${RSYNC_VERSION}" \
-        openssh-client="${OPENSSH_VERSION}"
+        rsync \
+        openssh-client
 
 COPY --chmod=755 --from=go-builder /docker-rsync-scheduler /usr/local/bin/docker-rsync-scheduler
 
