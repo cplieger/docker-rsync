@@ -78,7 +78,7 @@ func sshCommand(key string) string {
 // buildRsyncArgs assembles the explicit argument slice for a job. The
 // archive-ish flag set is -rlptD (recurse, links, perms, times, devices/
 // specials) minus owner/group/ACL/xattr, matching a logs-only one-way push.
-func buildRsyncArgs(j job) []string {
+func buildRsyncArgs(j *job) []string {
 	args := []string{"-rlptD"}
 	if j.Delete {
 		args = append(args, "--delete")
@@ -170,7 +170,7 @@ func tail(s string, n int) string {
 // runJob executes one sync job and returns its result. An empty source is
 // skipped and counts as success. Otherwise success is defined as rsync
 // exiting 0.
-func runJob(ctx context.Context, j job, timeout time.Duration, newCmd commandRunner) jobResult {
+func runJob(ctx context.Context, j *job, timeout time.Duration, newCmd commandRunner) jobResult {
 	start := time.Now()
 	res := jobResult{name: j.Name}
 
@@ -220,31 +220,32 @@ func runJob(ctx context.Context, j job, timeout time.Duration, newCmd commandRun
 	return res
 }
 
-// runSyncPass runs every job once and returns the success/failure counts.
+// runSyncPass runs every job once and returns the failure count.
 // It is the shared pass used by both the built-in scheduler (startup and
 // interval triggers) and the `sync` subcommand (external trigger). The
 // whole pass is guarded by an advisory file lock: if another pass is
 // already running (the built-in ticker racing the startup pass in-process,
 // or an external `sync` exec racing the ticker cross-process) this call
 // skips as a no-op success rather than running a second concurrent pass.
-func runSyncPass(ctx context.Context, cfg config, timeout time.Duration, trigger string, newCmd commandRunner) (okCount, failCount int) {
+func runSyncPass(ctx context.Context, cfg config, timeout time.Duration, trigger string, newCmd commandRunner) (failCount int) {
 	lock, ok, lockErr := tryLock(lockFilePath)
 	if lockErr != nil {
 		slog.Error("cannot acquire sync lock",
 			"trigger", trigger, "path", lockFilePath, "error", lockErr)
 		// A lock error is a real environment failure; report it as a failed
 		// pass so the health marker and exit code reflect the problem.
-		return 0, 1
+		return 1
 	}
 	if !ok {
 		slog.Info("sync already running, skipping overlapping request", "trigger", trigger)
-		return 0, 0
+		return 0
 	}
 	defer lock.unlock()
 
 	start := time.Now()
+	var okCount int
 	for i := range cfg.Jobs {
-		res := runJob(ctx, cfg.Jobs[i], timeout, newCmd)
+		res := runJob(ctx, &cfg.Jobs[i], timeout, newCmd)
 		if res.success {
 			okCount++
 		} else {
@@ -257,7 +258,7 @@ func runSyncPass(ctx context.Context, cfg config, timeout time.Duration, trigger
 		"ok", okCount,
 		"failed", failCount,
 		"duration_ms", time.Since(start).Milliseconds())
-	return okCount, failCount
+	return failCount
 }
 
 // cappedBuffer is an io.Writer that retains at most max bytes, discarding
